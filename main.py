@@ -1,38 +1,61 @@
-def ler_imagem_pbm(caminho_arquivo):
-    with open(caminho_arquivo, 'r') as arquivo:
-        linhas = arquivo.readlines()
-        
-        linhas = [linha.strip() for linha in linhas if not linha.startswith('#')] # remove comentários
+import numpy as np
+from PIL import Image
+from scipy.ndimage import median_filter
 
-        if linhas[0] != 'P1':
-            raise ValueError("Formato de arquivo inválido.") # exception pra caso n seja P1
+def ler_imagem_pbm(nome_arquivo):
+    with open(nome_arquivo, 'r') as file:
+        
+        linhas = file.readlines()
+        linhas = [linha.strip() for linha in linhas if not linha.startswith('#')] # remove coment
 
         largura, altura = map(int, linhas[1].split())
+        
+        dados = ''.join(linhas[2:])
 
         
-        dados_pixel = []
-        for linha in linhas[2:]:
-            dados_pixel.extend([int(pixel) for pixel in linha.split()])
+        imagem = np.array([int(bit) for bit in dados if bit.isdigit()]) # converte os dados p/ uma lista de inteiros
+        
+        # redimensiona a imagem para a forma correta
+        imagem = imagem.reshape(altura, largura)
+        
+        return imagem
 
-        return largura, altura, dados_pixel
+def salvar_imagem_pbm(nome_arquivo, imagem):
+    with open(nome_arquivo, 'w') as file:
+        file.write("P1\n") #cabecalho da nova imagem
+        file.write("# Nova imagem\n")
+        file.write(f"{imagem.shape[1]} {imagem.shape[0]}\n")
+        
+       
+        for linha in imagem:
+            file.write(" ".join(map(str, linha)) + "\n")
 
-def exibir_imagem(largura, altura, dados_pixel):
-    for i in range(0, len(dados_pixel), largura):
-        linha = dados_pixel[i:i+largura]
-        print(' '.join(str(pixel) for pixel in linha))
+def aplicar_filtro_mediana(imagem, size):
+    altura, largura = imagem.shape
+    imagem_filtrada = np.zeros_like(imagem) #matriz de zeros pra inicializar
+    
+    
+    for i in range(altura):
+        for j in range(largura):
+            
+            vizinhanca = imagem[ #mediana da vizinhança do pixel atual
+                max(0, i - size // 2):min(altura, i + size // 2 + 1),
+                max(0, j - size // 2):min(largura, j + size // 2 + 1)]
+             
+            imagem_filtrada[i, j] = np.median(vizinhanca)
+    
+    return imagem_filtrada
 
 def main():
-    nome_arquivo = "Teste-20240324T210047Z-001\Teste\lorem_s12_c03.pbm"  # Insira o nome do arquivo aqui
-
-    try:
-        largura, altura, dados_pixel = ler_imagem_pbm(nome_arquivo)
-        print("Largura:", largura)
-        print("Altura:", altura)
-        #print("PBM:")
-        #exibir_imagem(largura, altura, dados_pixel)
-
-    except ValueError as e:
-        print("Erro:", e)
+    nome_arquivo_entrada = 'entrada.pbm'
+    nome_arquivo_saida = 'saida.pbm'
+    nome_arquivo_mediana = 'mediana.pbm'
+    
+    imagem = ler_imagem_pbm(nome_arquivo_entrada)
+    salvar_imagem_pbm(nome_arquivo_saida, imagem)
+    
+    imagem_filtrada = aplicar_filtro_mediana(imagem,size=3) #mediana 3x3
+    salvar_imagem_pbm(nome_arquivo_mediana, imagem_filtrada)
 
 if __name__ == "__main__":
     main()
