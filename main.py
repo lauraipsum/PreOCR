@@ -106,63 +106,49 @@ def aplicar_fechamento(imagem):
             print(f"Erro ao aplicar fechamento: {e}")
             return None
 
-
-def circunscritas_por_retangulo(imagem):
+def circunscritas_por_retangulo(imagem, margem=2):
     altura, largura = imagem.shape
-    imagem_circunscrita = np.copy(imagem)
+    imagem_circunscrita = np.copy(imagem)  # Criar uma cópia da imagem para evitar alterações na original
 
-    # Identifica as palavras na imagem
-    palavras = []
-    in_palavra = False
+    # Encontrar os contornos das palavras
+    contornos = []
     for i in range(altura):
         for j in range(largura):
-            if imagem[i, j] == 0:
-                if not in_palavra:
-                    palavras.append([(i, j)])
-                    in_palavra = True
-                else:
-                    palavras[-1].append((i, j))
-            else:
-                if in_palavra:
-                    if len(palavras[-1]) >=  15:  
-                        in_palavra = False
-                    else:
-                        palavras.pop()
+            if imagem[i, j] == 1:  # Se o pixel for preto (valor 1)
+                contornos.append(encontrar_contorno(imagem, i, j))
 
-    # desenha retângulos ao redor de cada palavra
-    for palavra in palavras:
-        min_i = min(p[0] for p in palavra)
-        max_i = max(p[0] for p in palavra)
-        min_j = min(p[1] for p in palavra)
-        max_j = max(p[1] for p in palavra)
-
-        # Desenha o retângulo ao redor da palavra
-        imagem_circunscrita[min_i-1:min_i+2, min_j-1:max_j+2] = 1
-        imagem_circunscrita[max_i-1:max_i+2, min_j-1:max_j+2] = 1
-        imagem_circunscrita[min_i-1:max_i+2, min_j-1:min_j+2] = 1
-        imagem_circunscrita[min_i-1:max_i+2, max_j-1:max_j+2] = 1
-
-    for i in range(len(palavras) - 1):
-        min_i = min(p[0] for p in palavras[i])
-        max_i = max(p[0] for p in palavras[i])
-        min_j = min(p[1] for p in palavras[i])
-        max_j = max(p[1] for p in palavras[i])
-
-        next_min_i = min(p[0] for p in palavras[i+1])
-        next_max_i = max(p[0] for p in palavras[i+1])
-
-        if next_min_i - max_i >= 15:
-            imagem_circunscrita[max_i+1:max_i+6, min_j-1:max_j+2] = 1
-            imagem_circunscrita[next_min_i-6:next_min_i-1, min_j-1:max_j+2] = 1
+    # Desenhar retângulo ao redor de cada palavra
+    for contorno in contornos:
+        min_i, min_j = np.maximum(np.min(contorno, axis=0) - margem, 0)
+        max_i, max_j = np.minimum(np.max(contorno, axis=0) + margem, [altura - 1, largura - 1])
+        # Desenhar retângulo
+        imagem_circunscrita[min_i:max_i+1, min_j] = 1
+        imagem_circunscrita[min_i:max_i+1, max_j] = 1
+        imagem_circunscrita[min_i, min_j:max_j+1] = 1
+        imagem_circunscrita[max_i, min_j:max_j+1] = 1
 
     return imagem_circunscrita
 
+def encontrar_contorno(imagem, i, j):
+    altura, largura = imagem.shape
+    contorno = [(i, j)]
+    imagem[i, j] = 0  # Marcando o pixel como visitado
+
+    vizinhos = [(i-3, j-3), (i-3, j-2), (i-3, j-1), (i-3, j), (i-3, j+1), (i-3, j+2), (i-3, j+3),
+                (i-2, j-3), (i-2, j-2), (i-2, j-1), (i-2, j), (i-2, j+1), (i-2, j+2), (i-2, j+3),
+                (i-1, j-3), (i-1, j-2), (i-1, j-1), (i-1, j), (i-1, j+1), (i-1, j+2), (i-1, j+3),
+                (i, j-3),   (i, j-2),   (i, j-1),   (i, j),   (i, j+1),   (i, j+2),   (i, j+3),
+                (i+1, j-3), (i+1, j-2), (i+1, j-1), (i+1, j), (i+1, j+1), (i+1, j+2), (i+1, j+3),
+                (i+2, j-3), (i+2, j-2), (i+2, j-1), (i+2, j), (i+2, j+1), (i+2, j+2), (i+2, j+3),
+                (i+3, j-3), (i+3, j-2), (i+3, j-1), (i+3, j), (i+3, j+1), (i+3, j+2), (i+3, j+3)]
+
+    for ni, nj in vizinhos:
+        if 0 <= ni < altura and 0 <= nj < largura and imagem[ni, nj] == 1:
+            contorno.extend(encontrar_contorno(imagem, ni, nj))
 
 
 
-
-
-
+    return contorno
 
 
 
@@ -189,14 +175,10 @@ def main():
     salvar_imagem_pbm('fechamento.pbm', imagem_fechamento)
     print("Fechamento aplicado.")
     
-    imagem_palavras_circunscritas = circunscritas_por_retangulo(imagem_fechamento)
-    salvar_imagem_pbm('imagem_palavras_circunscritas.pbm', imagem_palavras_circunscritas)
-    print("Imagem com palavras circunscritas salva.")
+    imagem_com_retangulos = circunscritas_por_retangulo(imagem_fechamento)
+    salvar_imagem_pbm('com_retangulos.pbm', imagem_com_retangulos)
+    print("Retângulos circunscritos aplicados.")
 
-    
-
-
-    
 
 if __name__ == "__main__":
     main()
