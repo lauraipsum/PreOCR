@@ -54,13 +54,13 @@ def aplicar_filtro_mediana(imagem, size):
 def aplicar_erosao(imagem):
     try:
         altura, largura = imagem.shape
-        imagem_erosao = np.zeros_like(imagem)  # Inicialmente, todos os pixels são definidos como pretos
+        imagem_erosao = np.ones_like(imagem)  # Inicialmente, todos os pixels são definidos como brancos
         
-        for i in range(1, altura):  # Evita o primeiro pixel da imagem
-            for j in range(1, largura):  # Evita o primeiro pixel da linha
-                if imagem[i, j] == 1 and imagem[i - 1, j] == 1 and imagem[i, j - 1] == 1:  
-                    # Verifica se todos os pixels adjacentes na vertical e horizontal são pretos (valor 1)
-                    imagem_erosao[i, j] = 1
+        for i in range(1, altura):  # Começando de 1 para evitar o primeiro pixel da imagem
+            for j in range(1, largura):  # Começando de 1 para evitar o primeiro pixel da linha
+                if imagem[i, j] == 0 and imagem[i - 1, j] == 0 and imagem[i, j - 1] == 0:  
+                    # Verifica se todos os pixels adjacentes na vertical e horizontal são pretos (valor 0)
+                    imagem_erosao[i, j] = 0
                     
         return imagem_erosao
     except Exception as e:
@@ -68,16 +68,15 @@ def aplicar_erosao(imagem):
         return None
 
 
-
 def aplicar_dilatacao(imagem):
     try:
         altura, largura = imagem.shape
-        imagem_dilatacao = np.zeros_like(imagem)  
+        imagem_dilatacao = np.zeros_like(imagem)  # Inicialmente, todos os pixels são definidos como pretos
         
-        for i in range(altura - 1):  # evitra a última linha 
-            for j in range(largura - 1):  # evita a ultima coluna 
+        for i in range(altura - 1):  # Evitando a última linha da imagem
+            for j in range(largura - 1):  # Evitando a última coluna da imagem
                 if imagem[i, j] == 1 or imagem[i + 1, j] == 1 or imagem[i, j + 1] == 1:  
-                    # verifica se pelo menos 1 dos pixels adjacentes e preto (valor 1) na vertical ou horizontal
+                    # Verifica se pelo menos um dos pixels adjacentes é preto (valor 1) na vertical ou horizontal
                     imagem_dilatacao[i, j] = 1
                     
         return imagem_dilatacao
@@ -91,6 +90,7 @@ def aplicar_abertura(imagem):
 
         imagem_abertura = aplicar_dilatacao(imagem_erosao)
 
+        print("Abertura aplicada.")
         return imagem_abertura
     except Exception as e:
         print(f"Erro ao aplicar abertura: {e}")
@@ -106,38 +106,92 @@ def aplicar_fechamento(imagem):
             print(f"Erro ao aplicar fechamento: {e}")
             return None
 
+
+def circunscritas_por_retangulo(imagem):
+    altura, largura = imagem.shape
+    imagem_circunscrita = np.copy(imagem)
+
+    # Identifica as palavras na imagem
+    palavras = []
+    in_palavra = False
+    for i in range(altura):
+        for j in range(largura):
+            if imagem[i, j] == 0:
+                if not in_palavra:
+                    palavras.append([(i, j)])
+                    in_palavra = True
+                else:
+                    palavras[-1].append((i, j))
+            else:
+                if in_palavra:
+                    if len(palavras[-1]) >=  15:  
+                        in_palavra = False
+                    else:
+                        palavras.pop()
+
+    # desenha retângulos ao redor de cada palavra
+    for palavra in palavras:
+        min_i = min(p[0] for p in palavra)
+        max_i = max(p[0] for p in palavra)
+        min_j = min(p[1] for p in palavra)
+        max_j = max(p[1] for p in palavra)
+
+        # Desenha o retângulo ao redor da palavra
+        imagem_circunscrita[min_i-1:min_i+2, min_j-1:max_j+2] = 1
+        imagem_circunscrita[max_i-1:max_i+2, min_j-1:max_j+2] = 1
+        imagem_circunscrita[min_i-1:max_i+2, min_j-1:min_j+2] = 1
+        imagem_circunscrita[min_i-1:max_i+2, max_j-1:max_j+2] = 1
+
+    for i in range(len(palavras) - 1):
+        min_i = min(p[0] for p in palavras[i])
+        max_i = max(p[0] for p in palavras[i])
+        min_j = min(p[1] for p in palavras[i])
+        max_j = max(p[1] for p in palavras[i])
+
+        next_min_i = min(p[0] for p in palavras[i+1])
+        next_max_i = max(p[0] for p in palavras[i+1])
+
+        if next_min_i - max_i >= 15:
+            imagem_circunscrita[max_i+1:max_i+6, min_j-1:max_j+2] = 1
+            imagem_circunscrita[next_min_i-6:next_min_i-1, min_j-1:max_j+2] = 1
+
+    return imagem_circunscrita
+
+
+
+
+
+
+
+
+
+
+
 def main():
     nome_arquivo_entrada = 'entrada.pbm'
-    nome_arquivo_saida = 'saida.pbm'
-    nome_arquivo_mediana = 'mediana.pbm'
-    nome_arquivo_abertura = 'abertura.pbm'
-    nome_arquivo_fechamento = 'fechamento.pbm'
-    nome_arquivo_dilatacao = 'dilatacao.pbm'
-
 
 
     
     imagem = ler_imagem_pbm(nome_arquivo_entrada)
-    salvar_imagem_pbm(nome_arquivo_saida, imagem)
+    salvar_imagem_pbm('saida.pbm', imagem)
     print(f"Imagem salva.")
 
     
     imagem_filtrada = aplicar_filtro_mediana(imagem, size=3) # mediana 3x3
-    salvar_imagem_pbm(nome_arquivo_mediana, imagem_filtrada)
+    salvar_imagem_pbm('mediana.pbm', imagem_filtrada)
     print("Filtro da mediana aplicado.")
 
     
     # imagem_abertura = aplicar_abertura(imagem_filtrada) 
-    # salvar_imagem_pbm(nome_arquivo_abertura, imagem_abertura)
-    # print("Abertura aplicada.")
+    # salvar_imagem_pbm('abertura.pbm', imagem_abertura)
     
-    imagem_dilatada = aplicar_dilatacao(imagem_filtrada)
-    salvar_imagem_pbm(nome_arquivo_dilatacao, imagem_dilatada)
-    print("Dilatacao aplicada.")
-
-    imagem_fechamento = aplicar_fechamento(imagem_dilatada) 
-    salvar_imagem_pbm(nome_arquivo_fechamento, imagem_fechamento)
+    imagem_fechamento = aplicar_fechamento(imagem_filtrada) 
+    salvar_imagem_pbm('fechamento.pbm', imagem_fechamento)
     print("Fechamento aplicado.")
+    
+    imagem_palavras_circunscritas = circunscritas_por_retangulo(imagem_fechamento)
+    salvar_imagem_pbm('imagem_palavras_circunscritas.pbm', imagem_palavras_circunscritas)
+    print("Imagem com palavras circunscritas salva.")
 
     
 
