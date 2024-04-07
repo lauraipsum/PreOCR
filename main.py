@@ -54,10 +54,10 @@ def aplicar_filtro_mediana(imagem, size):
 def aplicar_erosao(imagem):
     try:
         altura, largura = imagem.shape
-        imagem_erosao = np.ones_like(imagem)  # Inicialmente, todos os pixels são definidos como brancos
+        imagem_erosao = np.ones_like(imagem)  # inicializa c/ todos os pixels definidos como brancos
         
-        for i in range(1, altura):  # Começando de 1 para evitar o primeiro pixel da imagem
-            for j in range(1, largura):  # Começando de 1 para evitar o primeiro pixel da linha
+        for i in range(1, altura):  # começando de 1 p/ evitar o primeiro pixel da imagem
+            for j in range(1, largura):  # começando de 1 p/ evitar o primeiro pixel da linha
                 if imagem[i, j] == 0 and imagem[i - 1, j] == 0 and imagem[i, j - 1] == 0:  
                     # Verifica se todos os pixels adjacentes na vertical e horizontal são pretos (valor 0)
                     imagem_erosao[i, j] = 0
@@ -71,12 +71,12 @@ def aplicar_erosao(imagem):
 def aplicar_dilatacao(imagem):
     try:
         altura, largura = imagem.shape
-        imagem_dilatacao = np.zeros_like(imagem)  # Inicialmente, todos os pixels são definidos como pretos
+        imagem_dilatacao = np.zeros_like(imagem)  # inicializa c/ todos os pixels definidos como pretos
         
-        for i in range(altura - 1):  # Evitando a última linha da imagem
-            for j in range(largura - 1):  # Evitando a última coluna da imagem
+        for i in range(altura - 1):  # evita a ultima linha da imagem
+            for j in range(largura - 1):  # evita a ultima coluna da imagem
                 if imagem[i, j] == 1 or imagem[i + 1, j] == 1 or imagem[i, j + 1] == 1:  
-                    # Verifica se pelo menos um dos pixels adjacentes é preto (valor 1) na vertical ou horizontal
+                    # verifica se pelo menos 1 dos pixels adjacentes e preto na vertical ou  na horizontal
                     imagem_dilatacao[i, j] = 1
                     
         return imagem_dilatacao
@@ -90,7 +90,6 @@ def aplicar_abertura(imagem):
 
         imagem_abertura = aplicar_dilatacao(imagem_erosao)
 
-        print("Abertura aplicada.")
         return imagem_abertura
     except Exception as e:
         print(f"Erro ao aplicar abertura: {e}")
@@ -108,20 +107,20 @@ def aplicar_fechamento(imagem):
 
 def circunscritas_por_retangulo(imagem, margem=2):
     altura, largura = imagem.shape
-    imagem_circunscrita = np.copy(imagem)  # Criar uma cópia da imagem para evitar alterações na original
+    imagem_circunscrita = np.copy(imagem)  
 
-    # Encontrar os contornos das palavras
+    # contornos das palavras
     contornos = []
     for i in range(altura):
         for j in range(largura):
-            if imagem[i, j] == 1:  # Se o pixel for preto (valor 1)
+            if imagem[i, j] == 1:  # pixel preto encontrado
                 contornos.append(encontrar_contorno(imagem, i, j))
 
-    # Desenhar retângulo ao redor de cada palavra
+    # desenha retangulo ao redor de cada palavra
     for contorno in contornos:
         min_i, min_j = np.maximum(np.min(contorno, axis=0) - margem, 0)
         max_i, max_j = np.minimum(np.max(contorno, axis=0) + margem, [altura - 1, largura - 1])
-        # Desenhar retângulo
+        # Desenha retangulo
         imagem_circunscrita[min_i:max_i+1, min_j] = 1
         imagem_circunscrita[min_i:max_i+1, max_j] = 1
         imagem_circunscrita[min_i, min_j:max_j+1] = 1
@@ -130,25 +129,33 @@ def circunscritas_por_retangulo(imagem, margem=2):
     return imagem_circunscrita
 
 def encontrar_contorno(imagem, i, j):
+    
+    
     altura, largura = imagem.shape
     contorno = [(i, j)]
-    imagem[i, j] = 0  # Marcando o pixel como visitado
+    imagem[i, j] = 2 # marca o pixel como visitado com um valor diferente de 1
 
-    vizinhos = [(i-3, j-3), (i-3, j-2), (i-3, j-1), (i-3, j), (i-3, j+1), (i-3, j+2), (i-3, j+3),
-                (i-2, j-3), (i-2, j-2), (i-2, j-1), (i-2, j), (i-2, j+1), (i-2, j+2), (i-2, j+3),
-                (i-1, j-3), (i-1, j-2), (i-1, j-1), (i-1, j), (i-1, j+1), (i-1, j+2), (i-1, j+3),
-                (i, j-3),   (i, j-2),   (i, j-1),   (i, j),   (i, j+1),   (i, j+2),   (i, j+3),
-                (i+1, j-3), (i+1, j-2), (i+1, j-1), (i+1, j), (i+1, j+1), (i+1, j+2), (i+1, j+3),
-                (i+2, j-3), (i+2, j-2), (i+2, j-1), (i+2, j), (i+2, j+1), (i+2, j+2), (i+2, j+3),
-                (i+3, j-3), (i+3, j-2), (i+3, j-1), (i+3, j), (i+3, j+1), (i+3, j+2), (i+3, j+3)]
+    fila = [(i, j)]
 
-    for ni, nj in vizinhos:
-        if 0 <= ni < altura and 0 <= nj < largura and imagem[ni, nj] == 1:
-            contorno.extend(encontrar_contorno(imagem, ni, nj))
+    while fila:
+        ni, nj = fila.pop(0)
+        vizinhos = [(ni-1, nj), (ni+1, nj), (ni, nj-1), (ni, nj+1),
+                    (ni-2, nj), (ni+2, nj), (ni, nj-2), (ni, nj+2),
+                    (ni-3, nj), (ni+3, nj), (ni, nj-3), (ni, nj+3)]
 
-
+        for vi, vj in vizinhos:
+            if 0 <= vi < altura and 0 <= vj < largura and imagem[vi, vj] == 1:
+                contorno.append((vi, vj))
+                imagem[vi, vj] = 2  # marca o pixel como visitado com um valor diferente de 1
+                fila.append((vi, vj))
 
     return contorno
+
+# def contagem(imagem):
+
+
+#     return num_linhas, num_palavras
+
 
 
 
@@ -168,16 +175,27 @@ def main():
     print("Filtro da mediana aplicado.")
 
     
-    # imagem_abertura = aplicar_abertura(imagem_filtrada) 
-    # salvar_imagem_pbm('abertura.pbm', imagem_abertura)
+    imagem_abertura = aplicar_abertura(imagem_filtrada) 
+    salvar_imagem_pbm('abertura.pbm', imagem_abertura)
+    print("Abertura aplicada.")
+
     
-    imagem_fechamento = aplicar_fechamento(imagem_filtrada) 
-    salvar_imagem_pbm('fechamento.pbm', imagem_fechamento)
-    print("Fechamento aplicado.")
+    # imagem_fechamento = aplicar_fechamento(imagem_filtrada) 
+    # salvar_imagem_pbm('fechamento.pbm', imagem_fechamento)
+    # print("Fechamento aplicado.")
     
-    imagem_com_retangulos = circunscritas_por_retangulo(imagem_fechamento)
+    imagem_dilatada = aplicar_dilatacao(imagem_abertura)
+    salvar_imagem_pbm('dilatacao.pbm', imagem_dilatada)
+    print("Dilatacao aplicada")
+    
+    imagem_com_retangulos = circunscritas_por_retangulo(imagem_dilatada)
     salvar_imagem_pbm('com_retangulos.pbm', imagem_com_retangulos)
     print("Retângulos circunscritos aplicados.")
+    
+    #     # Contar o número de linhas e palavras
+    # num_linhas, num_palavras = contagem(imagem_com_retangulos)
+    # print(f"Número de linhas: {num_linhas}")
+    # print(f"Número de palavras: {num_palavras}")
 
 
 if __name__ == "__main__":
