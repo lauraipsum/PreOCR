@@ -56,9 +56,9 @@ def aplicar_erosao(imagem):
         altura, largura = imagem.shape
         imagem_erosao = np.ones_like(imagem)  # inicializa c/ todos os pixels definidos como brancos
         
-        for i in range(1, altura):  # começando de 1 p/ evitar o primeiro pixel da imagem
-            for j in range(1, largura):  # começando de 1 p/ evitar o primeiro pixel da linha
-                if imagem[i, j] == 0 and imagem[i - 1, j] == 0 and imagem[i, j - 1] == 0:  
+        for i in range(altura):  # começando de 0 para cobrir toda a imagem
+            for j in range(largura):  # começando de 0 para cobrir toda a linha
+                if imagem[i, j] == 0 and (i == 0 or imagem[i - 1, j] == 0) and (j == 0 or imagem[i, j - 1] == 0):  
                     # Verifica se todos os pixels adjacentes na vertical e horizontal são pretos (valor 0)
                     imagem_erosao[i, j] = 0
                     
@@ -67,22 +67,24 @@ def aplicar_erosao(imagem):
         print(f"Erro ao aplicar erosão: {e}")
         return None
 
-
 def aplicar_dilatacao(imagem):
     try:
         altura, largura = imagem.shape
         imagem_dilatacao = np.zeros_like(imagem)  # inicializa c/ todos os pixels definidos como pretos
         
-        for i in range(altura - 1):  # evita a ultima linha da imagem
-            for j in range(largura - 1):  # evita a ultima coluna da imagem
-                if imagem[i, j] == 1 or imagem[i + 1, j] == 1 or imagem[i, j + 1] == 1:  
-                    # verifica se pelo menos 1 dos pixels adjacentes e preto na vertical ou  na horizontal
+        for i in range(altura):  
+            for j in range(largura):  
+                if imagem[i, j] == 1 or (i < altura - 1 and imagem[i + 1, j] == 1) or (j < largura - 1 and imagem[i, j + 1] == 1):  
+                    # verifica se pelo menos 1 dos pixels adjacentes é preto na vertical ou na horizontal
                     imagem_dilatacao[i, j] = 1
                     
         return imagem_dilatacao
     except Exception as e:
         print(f"Erro ao aplicar dilatação: {e}")
         return None
+
+
+
 
 def aplicar_abertura(imagem):
     try:
@@ -105,9 +107,10 @@ def aplicar_fechamento(imagem):
             print(f"Erro ao aplicar fechamento: {e}")
             return None
 
-def circunscritas_por_retangulo(imagem, margem=2):
+def circunscritas_por_retangulo(imagem, margem=1):
     altura, largura = imagem.shape
-    imagem_circunscrita = np.copy(imagem)  
+    imagem_circunscrita = np.copy(imagem)
+    coordenadas_retangulos = []
 
     # contornos das palavras
     contornos = []
@@ -120,13 +123,15 @@ def circunscritas_por_retangulo(imagem, margem=2):
     for contorno in contornos:
         min_i, min_j = np.maximum(np.min(contorno, axis=0) - margem, 0)
         max_i, max_j = np.minimum(np.max(contorno, axis=0) + margem, [altura - 1, largura - 1])
+        coordenadas_retangulos.append(((min_i, min_j), (min_i, max_j), (max_i, min_j), (max_i, max_j)))  # coordenadas dos extremos
+
         # Desenha retangulo
         imagem_circunscrita[min_i:max_i+1, min_j] = 1
         imagem_circunscrita[min_i:max_i+1, max_j] = 1
         imagem_circunscrita[min_i, min_j:max_j+1] = 1
         imagem_circunscrita[max_i, min_j:max_j+1] = 1
 
-    return imagem_circunscrita
+    return imagem_circunscrita, coordenadas_retangulos
 
 def encontrar_contorno(imagem, i, j):
     
@@ -151,13 +156,46 @@ def encontrar_contorno(imagem, i, j):
 
     return contorno
 
-# def contagem(imagem):
 
 
-#     return num_linhas, num_palavras
+def contagem(imagem):
+    altura, largura = imagem.shape
+    num_retangulos = 0
+    imagem_temp = np.copy(imagem)
 
+    for i in range(altura):
+        for j in range(largura):
+            if imagem_temp[i, j] == 1:  # Encontrou um pixel preto não visitado
+                contorno = encontrar_retangulo(imagem_temp, i, j)
+                if contorno is not None:  # Se encontrar um retângulo
+                    num_retangulos += 1
+                    for pixel in contorno:
+                        imagem_temp[pixel[0], pixel[1]] = 2  # Marcar os pixels do retângulo como visitados
 
+    return num_retangulos
 
+def encontrar_retangulo(imagem, i, j):
+    altura, largura = imagem.shape
+    retangulo = []
+
+    fila = [(i, j)]
+    while fila:
+        ni, nj = fila.pop(0)
+        if imagem[ni, nj] == 1:  # Se o pixel é preto
+            retangulo.append((ni, nj))
+            imagem[ni, nj] = 2  # Marca como visitado
+            # Adiciona vizinhos que não foram visitados ainda
+            vizinhos = [(ni-1, nj), (ni+1, nj), (ni, nj-1), (ni, nj+1)]
+            for vi, vj in vizinhos:
+                if 0 <= vi < altura and 0 <= vj < largura and imagem[vi, vj] == 1:
+                    fila.append((vi, vj))
+
+    # Verifica se o contorno encontrado é um retângulo válido
+    min_i, min_j = np.min(retangulo, axis=0)
+    max_i, max_j = np.max(retangulo, axis=0)
+    if max_i - min_i < 1 or max_j - min_j < 1:
+        return None  # Não é um retângulo válido
+    return retangulo
 
 
 def main():
@@ -188,14 +226,19 @@ def main():
     salvar_imagem_pbm('dilatacao.pbm', imagem_dilatada)
     print("Dilatacao aplicada")
     
-    imagem_com_retangulos = circunscritas_por_retangulo(imagem_dilatada)
+    imagem_com_retangulos, coordenadas_retangulos = circunscritas_por_retangulo(imagem_dilatada)
     salvar_imagem_pbm('com_retangulos.pbm', imagem_com_retangulos)
     print("Retângulos circunscritos aplicados.")
     
-    #     # Contar o número de linhas e palavras
-    # num_linhas, num_palavras = contagem(imagem_com_retangulos)
-    # print(f"Número de linhas: {num_linhas}")
-    # print(f"Número de palavras: {num_palavras}")
+    # # Imprimir coordenadas dos retângulos
+    # for i, coords in enumerate(coordenadas_retangulos):
+    #     print(f"Retângulo {i+1}:")
+    #     for coord in coords:
+    #         print(coord)
+
+    # Contar o número de linhas e palavras
+    num_palavras = len(coordenadas_retangulos)
+    print(f"Número de palavras: {num_palavras}")
 
 
 if __name__ == "__main__":
