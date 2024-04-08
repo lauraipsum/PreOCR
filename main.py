@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 def ler_imagem_pbm(nome_arquivo):
     try:
@@ -7,7 +8,7 @@ def ler_imagem_pbm(nome_arquivo):
             if not linhas[0].strip() == "P1":
                 raise ValueError("Formato de arquivo inválido. Deve ser um arquivo PBM P1.")
             
-            linhas = [linha.strip() for linha in linhas if not linha.startswith('#')] # remove comentários
+            linhas = [linha.strip() for linha in linhas if not linha.startswith('#')] # remove comentarios
             largura, altura = map(int, linhas[1].split())
             dados = ''.join(linhas[2:])
             
@@ -59,7 +60,7 @@ def aplicar_erosao(imagem):
         for i in range(altura):  # começando de 0 para cobrir toda a imagem
             for j in range(largura):  # começando de 0 para cobrir toda a linha
                 if imagem[i, j] == 0 and (i == 0 or imagem[i - 1, j] == 0) and (j == 0 or imagem[i, j - 1] == 0):  
-                    # Verifica se todos os pixels adjacentes na vertical e horizontal são pretos (valor 0)
+                    # verifica se todos os pixels adjacentes na vertical e horizontal são pretos (valor 0)
                     imagem_erosao[i, j] = 0
                     
         return imagem_erosao
@@ -125,7 +126,7 @@ def circunscritas_por_retangulo(imagem, margem=1):
         max_i, max_j = np.minimum(np.max(contorno, axis=0) + margem, [altura - 1, largura - 1])
         coordenadas_retangulos.append(((min_i, min_j), (min_i, max_j), (max_i, min_j), (max_i, max_j)))  # coordenadas dos extremos
 
-        # Desenha retangulo
+        # desenha o retangulo
         imagem_circunscrita[min_i:max_i+1, min_j] = 1
         imagem_circunscrita[min_i:max_i+1, max_j] = 1
         imagem_circunscrita[min_i, min_j:max_j+1] = 1
@@ -146,7 +147,9 @@ def encontrar_contorno(imagem, i, j):
         ni, nj = fila.pop(0)
         vizinhos = [(ni-1, nj), (ni+1, nj), (ni, nj-1), (ni, nj+1),
                     (ni-2, nj), (ni+2, nj), (ni, nj-2), (ni, nj+2),
-                    (ni-3, nj), (ni+3, nj), (ni, nj-3), (ni, nj+3)]
+                    (ni-3, nj), (ni+3, nj), (ni, nj-3), (ni, nj+3),
+                    (ni-4, nj), (ni+4, nj), (ni, nj-4), (ni, nj+4),
+                    (ni-5, nj), (ni+5, nj), (ni, nj-5), (ni, nj+5)]
 
         for vi, vj in vizinhos:
             if 0 <= vi < altura and 0 <= vj < largura and imagem[vi, vj] == 1:
@@ -158,19 +161,19 @@ def encontrar_contorno(imagem, i, j):
 
 
 
-def contagem(imagem):
+def contagem_palavras(imagem):
     altura, largura = imagem.shape
     num_retangulos = 0
     imagem_temp = np.copy(imagem)
 
     for i in range(altura):
         for j in range(largura):
-            if imagem_temp[i, j] == 1:  # Encontrou um pixel preto não visitado
+            if imagem_temp[i, j] == 1:  # encontra um pixel preto não visitado
                 contorno = encontrar_retangulo(imagem_temp, i, j)
-                if contorno is not None:  # Se encontrar um retângulo
+                if contorno is not None:  # se encontrar um retangulo
                     num_retangulos += 1
                     for pixel in contorno:
-                        imagem_temp[pixel[0], pixel[1]] = 2  # Marcar os pixels do retângulo como visitados
+                        imagem_temp[pixel[0], pixel[1]] = 2  # marca os pixels do retangulo como visitados
 
     return num_retangulos
 
@@ -181,25 +184,45 @@ def encontrar_retangulo(imagem, i, j):
     fila = [(i, j)]
     while fila:
         ni, nj = fila.pop(0)
-        if imagem[ni, nj] == 1:  # Se o pixel é preto
+        if imagem[ni, nj] == 1:  
             retangulo.append((ni, nj))
-            imagem[ni, nj] = 2  # Marca como visitado
-            # Adiciona vizinhos que não foram visitados ainda
+            imagem[ni, nj] = 2  # marca como visitado
+            # adiciona vizinhos que n foram visitados ainda
             vizinhos = [(ni-1, nj), (ni+1, nj), (ni, nj-1), (ni, nj+1)]
             for vi, vj in vizinhos:
                 if 0 <= vi < altura and 0 <= vj < largura and imagem[vi, vj] == 1:
                     fila.append((vi, vj))
 
-    # Verifica se o contorno encontrado é um retângulo válido
+    # verifica se o contorno encontrado e um retangulo valido
     min_i, min_j = np.min(retangulo, axis=0)
     max_i, max_j = np.max(retangulo, axis=0)
     if max_i - min_i < 1 or max_j - min_j < 1:
-        return None  # Não é um retângulo válido
+        return None  #retangulo invalido
     return retangulo
 
 
+def contagem_linhas(coordenadas_retangulos):
+    num_linhas = 0
+    max_y = -1  # valor inicial pra determinar a linha atual
+
+    # ordenar coordenadas_retangulos pelo valor de y do ponto mais baixo de cada retângulo
+    coordenadas_retangulos.sort(key=lambda coords: max(coords, key=lambda coord: coord[0])[0])
+
+    for coords in coordenadas_retangulos:
+        min_y = min(coords, key=lambda coord: coord[0])[0]
+        if min_y > max_y:  # se a parte superior do retângulo está em uma nova linha
+            num_linhas += 1
+            max_y = max(coords, key=lambda coord: coord[0])[0]
+
+    return num_linhas
+
+
+
+
 def main():
-    nome_arquivo_entrada = 'entrada.pbm'
+    start_time = time.time()
+
+    nome_arquivo_entrada = 'lorem_s12_c02_espacos_noise.pbm'
 
 
     
@@ -228,17 +251,27 @@ def main():
     
     imagem_com_retangulos, coordenadas_retangulos = circunscritas_por_retangulo(imagem_dilatada)
     salvar_imagem_pbm('com_retangulos.pbm', imagem_com_retangulos)
-    print("Retângulos circunscritos aplicados.")
+    print("Retangulos circunscritos aplicados.")
     
-    # # Imprimir coordenadas dos retângulos
+    # # coordenadas dos retangulos
     # for i, coords in enumerate(coordenadas_retangulos):
-    #     print(f"Retângulo {i+1}:")
+    #     print(f"Retangulo {i+1}:")
     #     for coord in coords:
     #         print(coord)
 
-    # Contar o número de linhas e palavras
+    # contar o número de linhas e palavras
     num_palavras = len(coordenadas_retangulos)
     print(f"Número de palavras: {num_palavras}")
+    
+    
+    num_linhas = contagem_linhas(coordenadas_retangulos)
+    print(f"Número de linhas: {num_linhas}")
+    
+    end_time = time.time()
+
+    execution_time = end_time - start_time
+
+    print(f"Tempo total de execução: {execution_time} segundos")
 
 
 if __name__ == "__main__":
