@@ -1,6 +1,5 @@
 import numpy as np
 import time
-from collections import deque
 
 
 def ler_imagem_pbm(nome_arquivo):
@@ -242,9 +241,9 @@ def contagem_linhas(coordenadas_retangulos):
 def main():
     start_time = time.time()
 
-    nome_arquivo_entrada = 'testePequeno/entradaTeste2.pbm'
+    #nome_arquivo_entrada = 'testePequeno/entradaTeste2.pbm'
     #nome_arquivo_entrada = 'Teste-20240324T210047Z-001/Teste/lorem_s12_c02_espacos_noise.pbm'
-    #nome_arquivo_entrada = 'imagensTesteGrupo/grupo_19_imagem_3_linhas_20_palavras_137.pbm'
+    nome_arquivo_entrada = 'imagensTesteGrupo/grupo_19_imagem_3_linhas_20_palavras_137.pbm'
 
 
     
@@ -272,7 +271,7 @@ def main():
     print("Dilatacao aplicada")
     
     imagem_com_retangulos, coordenadas_retangulos = circunscritas_por_retangulo(imagem_dilatada)
-    salvar_imagem_pbm('com_retangulos.pbm', imagem_com_retangulos)
+    salvar_imagem_pbm('resultado_final.pbm', imagem_com_retangulos)
     print("Retangulos circunscritos aplicados.")
     
     # # coordenadas dos retangulos
