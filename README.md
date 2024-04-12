@@ -1,8 +1,19 @@
-
 Objetivo: Processar uma imagem binária, no formato PBM ASCII (PGM tipo P1), que contém um texto com uma ou mais
 colunas. Como saída, o programa retorna quantas linhas e palavras esse texto contém, e gera uma imagem PBM contendo o texto da entrada, porém com cada palavra do texto circunscrita por um retângulo. 
 
-Funções:
+## Modo de uso:
+
+Primeiramente, é necessário instalar a biblioteca NumPy
+
+    pip install numpy
+    
+No arquivo **main.py**:
+
+Modifique o valor da variável  **nome_arquivo_entrada** para o caminho do .pbm que deseja selecionar.
+
+Por fim, basta executar o arquivo **main.py**
+
+## Funções:
 
 **`ler_imagem_pbm(nome_arquivo)`:** Recebe o nome de um arquivo no formato PBM e lê sua estrutura. Ela verifica se o arquivo está no formato correto (P1) e extrai as informações sobre a largura, altura e dados da imagem, retornando uma matriz NumPy representando a imagem.
     
