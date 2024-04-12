@@ -1,7 +1,6 @@
 import numpy as np
 import time
 
-
 def ler_imagem_pbm(nome_arquivo):
     try:
         with open(nome_arquivo, 'r') as file:
