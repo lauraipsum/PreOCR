@@ -35,22 +35,42 @@ def salvar_imagem_pbm(nome_arquivo, imagem):
     except Exception as e:
         print(f"Erro ao salvar imagem: {e}")
 
+def quickselect(arr, k):
+    """
+    Implementação do algoritmo Quickselect para encontrar o k-ésimo menor elemento em um array.
+    """
+    if len(arr) == 1:
+        return arr[0]
+
+    pivot = arr[len(arr) // 2]
+    smaller = [x for x in arr if x < pivot]
+    equal = [x for x in arr if x == pivot]
+    larger = [x for x in arr if x > pivot]
+
+    if k < len(smaller):
+        return quickselect(smaller, k)
+    elif k < len(smaller) + len(equal):
+        return equal[0]
+    else:
+        return quickselect(larger, k - len(smaller) - len(equal))
+
 def aplicar_filtro_mediana(imagem, size):
     try:
         altura, largura = imagem.shape
-        imagem_filtrada = np.zeros_like(imagem) # matriz de zeros para inicializar
-        
+        imagem_filtrada = np.zeros_like(imagem)
+
         for i in range(altura):
             for j in range(largura):
-                vizinhanca = imagem[ # mediana da vizinhança do pixel atual
-                    max(0, i - size // 2):min(altura, i + size // 2 + 1),
-                    max(0, j - size // 2):min(largura, j + size // 2 + 1)]
-                imagem_filtrada[i, j] = np.median(vizinhanca)
-                
+                vizinhanca = imagem[max(0, i - size // 2):min(altura, i + size // 2 + 1),
+                                    max(0, j - size // 2):min(largura, j + size // 2 + 1)]
+                mediana = quickselect(vizinhanca.flatten(), len(vizinhanca.flatten()) // 2)
+                imagem_filtrada[i, j] = mediana
+
         return imagem_filtrada
     except Exception as e:
         print(f"Erro ao aplicar filtro da mediana: {e}")
         return None
+
 
 def aplicar_erosao(imagem):
     try:
@@ -71,17 +91,17 @@ def aplicar_erosao(imagem):
 def aplicar_dilatacao(imagem):
     try:
         altura, largura = imagem.shape
-        imagem_dilatacao = np.zeros_like(imagem)  # inicializa c/ todos os pixels definidos como pretos
+        imagem_dilatacao = np.zeros_like(imagem)  # Inicializa com todos os pixels definidos como branc
         
         for i in range(altura):  
             for j in range(largura):  
-                if imagem[i, j] == 1 or (i < altura - 1 and imagem[i + 1, j] == 1) or (j < largura - 1 and imagem[i, j + 1] == 1):  
-                    # verifica se pelo menos 1 dos pixels adjacentes é preto na vertical ou na horizontal
+                if imagem[i, j] == 1 or (j < largura - 1 and imagem[i, j + 1] == 1):  
+                    # verifica se pelo menos 1 dos pixels adjacentes é preto na horizontal
                     imagem_dilatacao[i, j] = 1
                     
         return imagem_dilatacao
     except Exception as e:
-        print(f"Erro ao aplicar dilatação: {e}")
+        print(f"Erro ao aplicar dilatação horizontal: {e}")
         return None
 
 
@@ -222,7 +242,9 @@ def contagem_linhas(coordenadas_retangulos):
 def main():
     start_time = time.time()
 
-    nome_arquivo_entrada = 'lorem_s12_c02_espacos_noise.pbm'
+    nome_arquivo_entrada = 'testePequeno/entradaTeste2.pbm'
+    #nome_arquivo_entrada = 'Teste-20240324T210047Z-001/Teste/lorem_s12_c02_espacos_noise.pbm'
+    #nome_arquivo_entrada = 'imagensTesteGrupo/grupo_19_imagem_3_linhas_14_palavras_139.pbm'
 
 
     
