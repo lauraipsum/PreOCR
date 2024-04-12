@@ -1,5 +1,7 @@
 import numpy as np
 import time
+from collections import deque
+
 
 def ler_imagem_pbm(nome_arquivo):
     try:
@@ -35,10 +37,8 @@ def salvar_imagem_pbm(nome_arquivo, imagem):
     except Exception as e:
         print(f"Erro ao salvar imagem: {e}")
 
-def quickselect(arr, k):
-    """
-    Implementação do algoritmo Quickselect para encontrar o k-ésimo menor elemento em um array.
-    """
+def quickselect(arr, k): #encontra o k-esimo menor elemento em um array
+
     if len(arr) == 1:
         return arr[0]
 
@@ -91,7 +91,7 @@ def aplicar_erosao(imagem):
 def aplicar_dilatacao(imagem):
     try:
         altura, largura = imagem.shape
-        imagem_dilatacao = np.zeros_like(imagem)  # Inicializa com todos os pixels definidos como branc
+        imagem_dilatacao = np.zeros_like(imagem)  # inicializa com todos os pixels definidos como branc
         
         for i in range(altura):  
             for j in range(largura):  
@@ -244,22 +244,22 @@ def main():
 
     nome_arquivo_entrada = 'testePequeno/entradaTeste2.pbm'
     #nome_arquivo_entrada = 'Teste-20240324T210047Z-001/Teste/lorem_s12_c02_espacos_noise.pbm'
-    #nome_arquivo_entrada = 'imagensTesteGrupo/grupo_19_imagem_3_linhas_14_palavras_139.pbm'
+    #nome_arquivo_entrada = 'imagensTesteGrupo/grupo_19_imagem_3_linhas_20_palavras_137.pbm'
 
 
     
     imagem = ler_imagem_pbm(nome_arquivo_entrada)
-    salvar_imagem_pbm('saida.pbm', imagem)
+    #salvar_imagem_pbm('saida.pbm', imagem)
     print(f"Imagem salva.")
 
     
     imagem_filtrada = aplicar_filtro_mediana(imagem, size=3) # mediana 3x3
-    salvar_imagem_pbm('mediana.pbm', imagem_filtrada)
+    #salvar_imagem_pbm('mediana.pbm', imagem_filtrada)
     print("Filtro da mediana aplicado.")
 
     
     imagem_abertura = aplicar_abertura(imagem_filtrada) 
-    salvar_imagem_pbm('abertura.pbm', imagem_abertura)
+    #salvar_imagem_pbm('abertura.pbm', imagem_abertura)
     print("Abertura aplicada.")
 
     
@@ -268,7 +268,7 @@ def main():
     # print("Fechamento aplicado.")
     
     imagem_dilatada = aplicar_dilatacao(imagem_abertura)
-    salvar_imagem_pbm('dilatacao.pbm', imagem_dilatada)
+    #salvar_imagem_pbm('dilatacao.pbm', imagem_dilatada)
     print("Dilatacao aplicada")
     
     imagem_com_retangulos, coordenadas_retangulos = circunscritas_por_retangulo(imagem_dilatada)
@@ -293,7 +293,7 @@ def main():
 
     execution_time = end_time - start_time
 
-    print(f"Tempo total de execução: {execution_time} segundos")
+    print(f"Tempo de execução do codigo: {execution_time} segundos")
 
 
 if __name__ == "__main__":
